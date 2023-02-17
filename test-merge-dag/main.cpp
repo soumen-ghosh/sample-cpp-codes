@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <iterator>
 #include <tuple>
+#include <ranges>
 
 /*
  * The purpose here is to merge 2 DAGs as per below example:
@@ -22,33 +23,50 @@
  *                                   F, G should follow lexical order)
  *
  * DAG1: A->B->F->E->
- * DAG2: A->C->G->B->E->
- * Expected O/P: A->C->G->B->F->E-> (C & G should precede B;
- *                                   F should follow B and precede E)
+ * DAG2: A->C->G->B->T->Q->R->E->
+ * Expected O/P: A->C->G->B->F->T->Q->R->E (C & G should precede B;
+ *                                          F should follow B and precede E)
  *
  */
+
+inline void printVec(const std::vector<std::string> &seq_, std::ostream &strm_, const std::string &printIdentifier_)
+{
+  strm_ << printIdentifier_;
+  std::ranges::copy(seq_, std::ostream_iterator<std::string>(strm_, "->"));
+//  std::copy(seq_.begin(), seq_.end(), std::ostream_iterator<std::string>(strm_, "->"));
+  strm_ << std::endl;
+}
+
 class SequenceMerger {
  public:
-  SequenceMerger() = default;
+  explicit SequenceMerger(bool matchLast_ = true)
+  : _matchLast(matchLast_)
+  , _mergedSeq()
+  {}
   ~SequenceMerger() = default;
 
   SequenceMerger(const SequenceMerger &other_) = delete;
   SequenceMerger &operator=(const SequenceMerger &rhs_) = delete;
 
   void merge(const std::vector<std::string> &seq_);
-  std::vector<std::string> getMergeSeq() const {
+  [[nodiscard]] std::vector<std::string> getMergeSeq() const {
 
     std::vector<std::string> result(_mergedSeq);
     return result;
   }
 
  private:
+  bool                     _matchLast;
   std::vector<std::string> _mergedSeq;
 };
 
 void
 SequenceMerger::merge(const std::vector<std::string> &seq_) {
   assert(!seq_.empty());
+
+  if (_matchLast && !_mergedSeq.empty()) {
+    assert(*_mergedSeq.rbegin() == *seq_.rbegin());
+  }
 
   if (!_mergedSeq.empty()) {
     std::vector<std::string> inputSeq(seq_);
@@ -65,8 +83,9 @@ SequenceMerger::merge(const std::vector<std::string> &seq_) {
 
     std::vector<std::string> mergedSeq;
 
-    for (auto lIt = _mergedSeq.begin(), sIt = inputSeq.begin();
-         lIt != _mergedSeq.end() && sIt != inputSeq.end();) {
+    auto lIt = _mergedSeq.begin(), sIt = inputSeq.begin();
+
+    for (; lIt != _mergedSeq.end() && sIt != inputSeq.end();) {
 
       if (*lIt == *sIt) {
         mergedSeq.push_back(*lIt);
@@ -102,6 +121,15 @@ SequenceMerger::merge(const std::vector<std::string> &seq_) {
       }
     }
 
+    assert(sIt == inputSeq.end());
+    if (!_matchLast) {
+      if (lIt != _mergedSeq.end()) {
+        mergedSeq.insert(mergedSeq.end(), lIt, _mergedSeq.end());
+      }
+    } else {
+      assert(lIt == _mergedSeq.end());
+    }
+
     _mergedSeq.swap(mergedSeq);
 
   } else {
@@ -115,22 +143,17 @@ int main() {
   std::vector<std::string> seqA = {"A", "B", "F", "E"};
 //  std::vector<std::string> seqB = {"A", "C", "G", "E"};
 //  std::vector<std::string> seqB = {"A", "C", "G", "B", "E"};
-  std::vector<std::string> seqB = {"A", "F", "G", "C", "E"};
+//  std::vector<std::string> seqB = {"A", "F", "G", "C", "E", "Q", "R", "T"};
+  std::vector<std::string> seqB = {"A", "C", "G", "B", "T", "Q", "R", "E"};
 
-  std::cout << "seqA: ";
-  std::copy(seqA.begin(), seqA.end(), std::ostream_iterator<std::string>(std::cout, "->"));
-  std::cout << std::endl;
-  std::cout << "seqB: ";
-  std::copy(seqB.begin(), seqB.end(), std::ostream_iterator<std::string>(std::cout, "->"));
-  std::cout << std::endl;
+  printVec(seqA, std::cout, "seqA:");
+  printVec(seqB, std::cout, "seqB:");
 
   sequenceMerger.merge(seqA);
   sequenceMerger.merge(seqB);
 
   auto merged = sequenceMerger.getMergeSeq();
-  std::cout << "merged: ";
-  std::copy(merged.begin(), merged.end(), std::ostream_iterator<std::string>(std::cout, "->"));
-  std::cout << std::endl;
+  printVec(merged, std::cout, "merged:");
 
   return 0;
 }
