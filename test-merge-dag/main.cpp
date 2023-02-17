@@ -7,6 +7,26 @@
 #include <iterator>
 #include <tuple>
 
+/*
+ * The purpose here is to merge 2 DAGs as per below example:
+ * DAG1: A->B->F->E->
+ * DAG2: A->F->G->C->E->
+ * Expected O/P: A->B->F->G->C->E-> (here B should precede F;
+ *                                   F should be followed by G, C and C should precede E)
+ *
+ * DAG1: A->B->F->E->
+ * DAG2: A->C->G->E->
+ * Expected O/P: A->B->C->F->G->E-> (A & E should be 1st and last element;
+ *                                   B, C should precede F, G;
+ *                                   B, C should follow lexical order;
+ *                                   F, G should follow lexical order)
+ *
+ * DAG1: A->B->F->E->
+ * DAG2: A->C->G->B->E->
+ * Expected O/P: A->C->G->B->F->E-> (C & G should precede B;
+ *                                   F should follow B and precede E)
+ *
+ */
 class SequenceMerger {
  public:
   SequenceMerger() = default;
