@@ -29,8 +29,7 @@
  *
  */
 
-inline void printVec(const std::vector<std::string> &seq_, std::ostream &strm_, const std::string &printIdentifier_)
-{
+inline void printVec(const std::vector<std::string> &seq_, std::ostream &strm_, const std::string &printIdentifier_) {
   strm_ << printIdentifier_;
   std::ranges::copy(seq_, std::ostream_iterator<std::string>(strm_, "->"));
 //  std::copy(seq_.begin(), seq_.end(), std::ostream_iterator<std::string>(strm_, "->"));
@@ -40,23 +39,27 @@ inline void printVec(const std::vector<std::string> &seq_, std::ostream &strm_, 
 class SequenceMerger {
  public:
   explicit SequenceMerger(bool matchLast_ = true)
-  : _matchLast(matchLast_)
-  , _mergedSeq()
-  {}
+      : _matchLast(matchLast_), _mergedSeq() {}
   ~SequenceMerger() = default;
 
   SequenceMerger(const SequenceMerger &other_) = delete;
   SequenceMerger &operator=(const SequenceMerger &rhs_) = delete;
 
   void merge(const std::vector<std::string> &seq_);
+
   [[nodiscard]] std::vector<std::string> getMergeSeq() const {
 
     std::vector<std::string> result(_mergedSeq);
     return result;
   }
 
+  inline void reset(bool matchLast_ = true) {
+    _matchLast = matchLast_;
+    _mergedSeq.clear();
+  }
+
  private:
-  bool                     _matchLast;
+  bool _matchLast;
   std::vector<std::string> _mergedSeq;
 };
 
@@ -145,7 +148,6 @@ int main() {
 //  std::vector<std::string> seqB = {"A", "C", "G", "B", "E"};
 //  std::vector<std::string> seqB = {"A", "F", "G", "C", "E", "Q", "R", "T"};
   std::vector<std::string> seqB = {"A", "C", "G", "B", "T", "Q", "R", "E"};
-
   printVec(seqA, std::cout, "seqA:");
   printVec(seqB, std::cout, "seqB:");
 
@@ -155,5 +157,44 @@ int main() {
   auto merged = sequenceMerger.getMergeSeq();
   printVec(merged, std::cout, "merged:");
 
+  assert(merged == std::vector<std::string>({"A", "C", "G", "B", "F", "T", "Q", "R", "E"}));
+
+  std::vector<std::vector<std::string> > complexSeq1 = {
+      {"A", "B", "F", "E"},
+      {"A", "C", "G", "E"},
+      {"A", "C", "G", "T", "Q", "R", "E"}
+  };
+
+  sequenceMerger.reset();
+
+  for (auto &v : complexSeq1) {
+    printVec(v, std::cout, "v:");
+
+    sequenceMerger.merge(v);
+  }
+
+  merged = sequenceMerger.getMergeSeq();
+  printVec(merged, std::cout, "merged:");
+
+  assert(merged == std::vector<std::string>({"A", "B", "C", "F", "G", "T", "Q", "R", "E"}));
+
+  std::vector<std::vector<std::string> > complexSeq2 = {
+      {"XYZ", "DEF", "PQR"},
+      {"ABC", "XYZ", "IJK", "PQR"},
+      {"XYZ", "IJK", "LMO", "PQR"}
+  };
+
+  sequenceMerger.reset();
+
+  for (auto &v : complexSeq2) {
+    printVec(v, std::cout, "v:");
+
+    sequenceMerger.merge(v);
+  }
+
+  merged = sequenceMerger.getMergeSeq();
+  printVec(merged, std::cout, "merged:");
+
+  assert(merged == std::vector<std::string>({"ABC", "XYZ", "DEF", "IJK", "LMO", "PQR"}));
   return 0;
 }
