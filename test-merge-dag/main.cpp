@@ -7,6 +7,7 @@
 #include <iterator>
 #include <tuple>
 #include <ranges>
+#include <chrono>
 
 /*
  * The purpose here is to merge 2 DAGs as per below example:
@@ -160,12 +161,19 @@ int main() {
   assert(merged == std::vector<std::string>({"A", "C", "G", "B", "F", "T", "Q", "R", "E"}));
 
   std::vector<std::vector<std::string> > complexSeq1 = {
-      {"A", "B", "F", "E"},
-      {"A", "C", "G", "E"},
-      {"A", "C", "G", "T", "Q", "R", "E"}
+      {"A", "Q", "B", "F", "E"},
+      {"A", "C", "T", "E"},
+      {"A", "C", "G", "B", "T", "R", "E"}
   };
 
   sequenceMerger.reset();
+
+  auto start = std::chrono::high_resolution_clock::now();
+  std::sort(complexSeq1.begin(),
+            complexSeq1.end(),
+            [](std::vector<std::string> &v1, std::vector<std::string> &v2) -> bool {
+              return v1.size() > v2.size();
+            });
 
   for (auto &v : complexSeq1) {
     printVec(v, std::cout, "v:");
@@ -174,9 +182,13 @@ int main() {
   }
 
   merged = sequenceMerger.getMergeSeq();
-  printVec(merged, std::cout, "merged:");
+  auto end = std::chrono::high_resolution_clock::now();
 
-  assert(merged == std::vector<std::string>({"A", "B", "C", "F", "G", "T", "Q", "R", "E"}));
+  printVec(merged, std::cout, "merged:");
+  std::cout << "Elapsed time (ms): " << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count()
+            << std::endl;
+
+  assert(merged == std::vector<std::string>({"A", "C", "Q", "G", "B", "F", "T", "R", "E"}));
 
   std::vector<std::vector<std::string> > complexSeq2 = {
       {"XYZ", "DEF", "PQR"},
@@ -186,6 +198,13 @@ int main() {
 
   sequenceMerger.reset();
 
+  start = std::chrono::high_resolution_clock::now();
+  std::sort(complexSeq2.begin(),
+            complexSeq2.end(),
+            [](std::vector<std::string> &v1, std::vector<std::string> &v2) -> bool {
+              return v1.size() > v2.size();
+            });
+
   for (auto &v : complexSeq2) {
     printVec(v, std::cout, "v:");
 
@@ -193,8 +212,13 @@ int main() {
   }
 
   merged = sequenceMerger.getMergeSeq();
+  end = std::chrono::high_resolution_clock::now();
+
   printVec(merged, std::cout, "merged:");
+  std::cout << "Elapsed time (ms): " << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count()
+            << std::endl;
 
   assert(merged == std::vector<std::string>({"ABC", "XYZ", "DEF", "IJK", "LMO", "PQR"}));
+
   return 0;
 }
